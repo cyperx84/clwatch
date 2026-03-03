@@ -1,0 +1,1 @@
+{"models":[{"id":"claude-sonnet-4-5","provider":"Anthropic","name":"Claude Sonnet 4.5"}],"harnesses":{"claude-code":{"supported":["claude-sonnet-4-5"],"default":"claude-sonnet-4-5","notes":"Anthropic only"}}}

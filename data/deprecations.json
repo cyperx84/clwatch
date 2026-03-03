@@ -1,0 +1,1 @@
+[{"harness":"claude-code","item":"npm install method","deprecated":"2026-01-15","removal":"2026-06-01","severity":"warning","migration":"Use installer script","affects":"bootstrap scripts"}]

@@ -1,0 +1,1 @@
+[{"harness":"claude-code","version":"2.1","action":"Enable MCP search","impact":"high","description":"Huge context savings","how":"Upgrade to latest","tags":["performance"]}]
