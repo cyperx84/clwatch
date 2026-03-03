@@ -1,10 +1,10 @@
 {
-  "name": "cliwatch",
+  "name": "clwatch",
   "version": "0.1.0",
-  "description": "CLI tool for tracking AI coding tool changes from changelogs.info",
+  "description": "CLI companion for changelogs.info \u2014 track AI agent harness releases, config drift, and deprecations",
   "type": "module",
   "bin": {
-    "cliwatch": "./dist/cli.js"
+    "clwatch": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup",

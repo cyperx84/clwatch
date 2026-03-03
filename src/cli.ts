@@ -7,7 +7,7 @@ import { runDeprecations } from './commands/deprecations.js';
 import { runTui } from './commands/tui.js';
 
 const program = new Command();
-program.name('cliwatch').description('Track harness changelog updates and config impact').version('0.1.0');
+program.name('clwatch').description('Track harness changelog updates and config impact').version('0.1.0');
 
 program.command('diff').argument('[harness]').option('--since <duration>', 'e.g. 7d, 2w, 1m', '7d').action((h, o) => runDiff(h, o.since));
 program.command('check').argument('<configPath>').action((p) => runCheck(p));

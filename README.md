@@ -1,4 +1,4 @@
-# cliwatch
+# clwatch
 
 ```
      _ _                 _       _
@@ -13,7 +13,7 @@ Track AI coding tool changes from changelogs.info
 ## Installation
 
 ```bash
-npm install -g cliwatch
+npm install -g clwatch
 ```
 
 ## Usage
@@ -22,57 +22,57 @@ npm install -g cliwatch
 
 ```bash
 # All changes in last 7 days
-cliwatch diff
+clwatch diff
 
 # Changes for specific tool
-cliwatch diff claude-code
+clwatch diff claude-code
 
 # Changes in last 30 days
-cliwatch diff --since 30d
+clwatch diff --since 30d
 ```
 
 ### Check your config
 
 ```bash
 # Scan config file for outdated options
-cliwatch check .claude/CLAUDE.md
-cliwatch check .cursorrules
-cliwatch check .aider.conf.yml
+clwatch check .claude/CLAUDE.md
+clwatch check .cursorrules
+clwatch check .aider.conf.yml
 ```
 
 ### List models
 
 ```bash
 # All tracked models
-cliwatch models
+clwatch models
 
 # Only new models (last 90 days)
-cliwatch models --new
+clwatch models --new
 
 # Filter by provider
-cliwatch models --provider anthropic
+clwatch models --provider anthropic
 ```
 
 ### Check model compatibility
 
 ```bash
-cliwatch compat claude-sonnet-4-6
+clwatch compat claude-sonnet-4-6
 ```
 
 ### View deprecations
 
 ```bash
 # All deprecations
-cliwatch deprecations
+clwatch deprecations
 
 # For specific harness
-cliwatch deprecations --harness cursor
+clwatch deprecations --harness cursor
 ```
 
 ### Interactive TUI
 
 ```bash
-cliwatch tui
+clwatch tui
 ```
 
 ## Commands
