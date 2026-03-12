@@ -13,9 +13,12 @@ const DefaultManifestURL = "https://changelogs.info/api/refs/manifest.json"
 
 // Tool represents a single tool entry in the manifest.
 type Tool struct {
-	CurrentVersion string          `json:"version"`
-	StaleAfter     string          `json:"stale_after"`
-	Delta          json.RawMessage `json:"delta,omitempty"`
+	CurrentVersion     string          `json:"version"`
+	PayloadURL         string          `json:"payload_url,omitempty"`
+	GeneratedAt        string          `json:"generated_at,omitempty"`
+	VerificationStatus string          `json:"verification_status,omitempty"`
+	StaleAfter         string          `json:"stale_after"`
+	Delta              json.RawMessage `json:"delta,omitempty"`
 }
 
 // Manifest is the top-level payload from changelogs.info/api/refs/manifest.json
