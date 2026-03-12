@@ -1,78 +1,107 @@
-# clwatch (Go CLI)
+# clwatch — Go CLI
 
-Track coding tool updates from [changelogs.info](https://changelogs.info).
+Developer reference for building and developing the clwatch CLI. For user-facing docs, see the [root README](../README.md).
 
-## Install
-
-### Homebrew
+## Build
 
 ```bash
-brew install cyperx84/tap/clwatch
-```
+# Build for current platform
+make build
 
-### npm
+# Install to $GOPATH/bin
+make install
 
-```bash
-npm install -g clwatch
-```
-
-### curl
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/cyperx84/clwatch/main/install.sh | bash
-```
-
-### Go install
-
-```bash
-go install github.com/cyperx/clwatch/cmd/clwatch@latest
-```
-
-### Build from source
-
-```bash
-cd go/
-make build        # builds ./clwatch
-make install      # installs to $GOPATH/bin/clwatch
+# Cross-platform release builds
+bash scripts/build-release.sh [version]
 ```
 
 Requires Go 1.22+.
 
-## Usage
+## Commands
 
-```bash
-# Check for updates
-clwatch diff
+| Command | Description | Exit codes |
+|---|---|---|
+| `diff` | Check manifest for updates | 0 = current, 1 = changes |
+| `list` | Show all tracked tools | 0 |
+| `refresh <tool>` | Pull payload + show delta | 0 |
+| `init` | Scaffold workspace config | 0 |
+| `ack <tool> <version>` | Mark version as known | 0 |
+| `watch` | Daemon mode, poll on interval | 0 (Ctrl+C) |
+| `status` | Pipeline health from site | 0 |
+| `version` | Print version | 0 |
 
-# Check with JSON output
-clwatch diff --json
+## Architecture
 
-# Show all tools (including current)
-clwatch diff --verbose
-
-# Check without updating local state
-clwatch diff --no-update
-
-# List all tracked tools
-clwatch list
-
-# List as JSON
-clwatch list --json
-
-# Print version
-clwatch version
+```
+go/
+├── cmd/clwatch/main.go         # CLI entry point, command routing
+├── internal/
+│   ├── diff/diff.go            # Manifest vs local state comparison
+│   ├── manifest/manifest.go    # Manifest fetching + parsing
+│   ├── output/output.go        # Table/JSON output formatting
+│   ├── refresh/refresh.go      # Payload fetching + delta display
+│   ├── state/state.go          # Local state (read/write ~/.clwatch/state.json)
+│   ├── watcher/watcher.go      # Watch daemon (polling + webhooks)
+│   └── workspace/workspace.go  # Workspace config (.clwatch.json)
+├── scripts/build-release.sh    # Cross-platform build script
+├── go.mod
+└── go.sum
 ```
 
-## Exit codes
+## Testing
 
-- `clwatch diff` exits **0** if all tools are current, **1** if any changes detected (useful for scripting).
+```bash
+# Against live site
+clwatch diff
+clwatch list
+clwatch refresh claude-code
 
-## Environment
+# Against local server
+cd ~/github/changelogs-info/public && python3 -m http.server 8889 &
+CLWATCH_MANIFEST_URL="http://localhost:8889/api/refs/manifest.json" clwatch diff
 
-| Variable | Description |
-|---|---|
-| `CLWATCH_MANIFEST_URL` | Override the manifest URL (default: `https://changelogs.info/api/refs/manifest.json`) |
+# Watch daemon (Ctrl+C to stop)
+clwatch watch --interval 30s
 
-## Local state
+# Status from live site
+clwatch status
+```
 
-State is stored at `~/.clwatch/state.json` and tracks known versions and last-checked timestamps.
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CLWATCH_MANIFEST_URL` | `https://changelogs.info/api/refs/manifest.json` | Manifest source |
+| `CLWATCH_STATUS_URL` | Derived from manifest URL | Status endpoint |
+
+## State file
+
+`~/.clwatch/state.json` — auto-managed by `diff` and `ack` commands:
+
+```json
+{
+  "schema": "clwatch.state.v1",
+  "last_checked": "2026-03-12T00:00:00Z",
+  "tools": {
+    "claude-code": {
+      "known_version": "2.1.74",
+      "last_seen_at": "2026-03-12T00:00:00Z"
+    }
+  }
+}
+```
+
+## Adding a command
+
+1. Add handler in `cmd/clwatch/main.go` (switch case + `runXxx` function)
+2. Implement logic in a new `internal/` package
+3. Add to `printUsage()` help text
+4. Add test cases
+5. Update root `README.md` with user-facing docs
+
+## Release process
+
+1. `git tag v1.x.x && git push --tags`
+2. GitHub Actions builds 5 binaries via `scripts/build-release.sh`
+3. Release created automatically via `softprops/action-gh-release`
+4. Update Homebrew formula in `cyperx84/homebrew-tap` with new checksums
