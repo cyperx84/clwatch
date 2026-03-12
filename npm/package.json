@@ -1,0 +1,17 @@
+{
+  "name": "clwatch",
+  "version": "1.0.0",
+  "description": "Track coding tool updates from changelogs.info",
+  "bin": {
+    "clwatch": "bin/clwatch.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyperx84/clwatch.git"
+  },
+  "keywords": ["cli", "changelog", "developer-tools"],
+  "license": "MIT"
+}

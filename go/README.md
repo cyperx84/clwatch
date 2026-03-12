@@ -4,6 +4,32 @@ Track coding tool updates from [changelogs.info](https://changelogs.info).
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install cyperx84/tap/clwatch
+```
+
+### npm
+
+```bash
+npm install -g clwatch
+```
+
+### curl
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cyperx84/clwatch/main/install.sh | bash
+```
+
+### Go install
+
+```bash
+go install github.com/cyperx/clwatch/cmd/clwatch@latest
+```
+
+### Build from source
+
 ```bash
 cd go/
 make build        # builds ./clwatch

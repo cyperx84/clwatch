@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cyperx/clwatch/internal/diff"
 	"github.com/cyperx/clwatch/internal/manifest"
 	"github.com/cyperx/clwatch/internal/output"
 	"github.com/cyperx/clwatch/internal/refresh"
 	"github.com/cyperx/clwatch/internal/state"
+	"github.com/cyperx/clwatch/internal/watcher"
 	"github.com/cyperx/clwatch/internal/workspace"
 )
 
@@ -35,6 +40,10 @@ func main() {
 		os.Exit(runInit(os.Args[2:]))
 	case "ack":
 		os.Exit(runAck(os.Args[2:]))
+	case "watch":
+		os.Exit(runWatch(os.Args[2:]))
+	case "status":
+		os.Exit(runStatus(os.Args[2:]))
 	case "version":
 		fmt.Printf("clwatch %s\n", version)
 		os.Exit(0)
@@ -48,6 +57,149 @@ func main() {
 	}
 }
 
+func runWatch(args []string) int {
+	cfg := watcher.Config{
+		ManifestURL: manifest.ManifestURL(),
+		Interval:    6 * time.Hour,
+	}
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--interval":
+			if i+1 < len(args) {
+				d, err := watcher.ParseInterval(args[i+1])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %v\n", err)
+					return 1
+				}
+				cfg.Interval = d
+				i++
+			}
+		case "--json":
+			cfg.JSONOutput = true
+		case "--webhook":
+			if i+1 < len(args) {
+				cfg.WebhookURL = args[i+1]
+				i++
+			}
+		}
+	}
+	diffFn := func(ctx context.Context, url string, _ bool) ([]watcher.Update, error) {
+		m, err := manifest.FetchFrom(url)
+		if err != nil {
+			return nil, err
+		}
+		s, _ := state.Load()
+		results := diff.Compare(m, s)
+		diff.UpdateState(s, results)
+		state.Save(s)
+		var updates []watcher.Update
+		for _, r := range results {
+			if r.Status != diff.StatusCurrent {
+				updates = append(updates, watcher.Update{
+					Tool:            r.Tool,
+					Status:          string(r.Status),
+					PreviousVersion: r.PreviousVersion,
+					CurrentVersion:  r.CurrentVersion,
+				})
+			}
+		}
+		return updates, nil
+	}
+	if err := watcher.Run(cfg, diffFn); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+type statusResponse struct {
+	Schema      string `json:"schema"`
+	GeneratedAt string `json:"generated_at"`
+	Pipeline    struct {
+		LastRunAt    string `json:"last_run_at"`
+		Status       string `json:"status"`
+		ToolsChecked int    `json:"tools_checked"`
+		ToolsUpdated int    `json:"tools_updated"`
+		ToolsErrored int    `json:"tools_errored"`
+	} `json:"pipeline"`
+	Tools map[string]struct {
+		Version            string `json:"version"`
+		VerificationStatus string `json:"verification_status"`
+		LastCheckedAt      string `json:"last_checked_at"`
+		Stale              bool   `json:"stale"`
+	} `json:"tools"`
+}
+
+func runStatus(args []string) int {
+	jsonOutput := false
+	statusURL := os.Getenv("CLWATCH_STATUS_URL")
+	if statusURL == "" {
+		statusURL = strings.Replace(manifest.ManifestURL(), "manifest.json", "status.json", 1)
+	}
+	for _, a := range args {
+		if a == "--json" {
+			jsonOutput = true
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
+	req.Header.Set("User-Agent", "clwatch/1.0")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error fetching status: %v\n", err)
+		return 1
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		fmt.Fprintf(os.Stderr, "error: HTTP %d from %s\n", resp.StatusCode, statusURL)
+		return 1
+	}
+	if jsonOutput {
+		fmt.Println(string(body))
+		return 0
+	}
+	var s statusResponse
+	if err := json.Unmarshal(body, &s); err != nil {
+		fmt.Fprintf(os.Stderr, "error parsing status: %v\n", err)
+		return 1
+	}
+	ago := func(ts string) string {
+		if ts == "" {
+			return "never"
+		}
+		t, err := time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return ts
+		}
+		d := time.Since(t)
+		if d < time.Minute {
+			return "just now"
+		} else if d < time.Hour {
+			return fmt.Sprintf("%dm ago", int(d.Minutes()))
+		} else if d < 24*time.Hour {
+			return fmt.Sprintf("%dh ago", int(d.Hours()))
+		}
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	}
+	fmt.Println("changelogs.info status")
+	fmt.Printf("Pipeline last ran: %s  (%s)\n\n", ago(s.Pipeline.LastRunAt), s.Pipeline.Status)
+	fmt.Printf("%-14s %-10s %-10s %-6s %s\n", "TOOL", "VERSION", "VERIFIED", "STALE", "LAST CHECKED")
+	for id, t := range s.Tools {
+		verified := "✓"
+		if t.VerificationStatus != "verified" {
+			verified = "?"
+		}
+		stale := "no"
+		if t.Stale {
+			stale = "YES"
+		}
+		fmt.Printf("%-14s %-10s %-10s %-6s %s\n", id, t.Version, verified, stale, ago(t.LastCheckedAt))
+	}
+	return 0
+}
+
 func printUsage() {
 	fmt.Fprintf(os.Stderr, `clwatch — track coding tool updates
 
@@ -57,6 +209,8 @@ Usage:
   clwatch refresh   <tool> [--json] [--diff-only] [--all]
   clwatch init      [--dir DIR] [--tools TOOLS] [--force]
   clwatch ack       <tool> <version>
+  clwatch watch     [--interval 6h] [--json] [--webhook URL]
+  clwatch status    [--json]
   clwatch version
 
 Environment:

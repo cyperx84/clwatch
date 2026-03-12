@@ -93,3 +93,16 @@ func ParseStaleAfter(s string) (time.Duration, error) {
 		return time.ParseDuration(s)
 	}
 }
+
+// FetchFrom fetches the manifest from a specific URL.
+func FetchFrom(url string) (*Manifest, error) {
+	prev := os.Getenv("CLWATCH_MANIFEST_URL")
+	os.Setenv("CLWATCH_MANIFEST_URL", url)
+	m, err := Fetch()
+	if prev == "" {
+		os.Unsetenv("CLWATCH_MANIFEST_URL")
+	} else {
+		os.Setenv("CLWATCH_MANIFEST_URL", prev)
+	}
+	return m, err
+}
