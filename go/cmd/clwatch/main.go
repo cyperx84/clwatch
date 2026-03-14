@@ -51,6 +51,8 @@ func main() {
 		os.Exit(runService(os.Args[2:]))
 	case "completion":
 		os.Exit(runCompletion(os.Args[2:]))
+	case "diff-tool":
+		os.Exit(runDiffTool(os.Args[2:]))
 	case "help", "--help", "-h":
 		printUsage()
 		os.Exit(0)
@@ -215,12 +217,14 @@ Usage:
   clwatch ack         <tool> <version>
   clwatch watch       [--interval 6h] [--json] [--webhook URL]
   clwatch status      [--json]
+  clwatch diff-tool   <tool> <from> <to> [--json]
   clwatch service     <install|uninstall|start|stop|status|logs>
   clwatch completion  <bash|zsh|fish>
   clwatch version
 
 Environment:
   CLWATCH_MANIFEST_URL   Override manifest URL (default: %s)
+  CLWATCH_DIFF_URL      Override diff API URL (default: https://changelogs.info/api/refs/diff)
 `, manifest.DefaultManifestURL)
 }
 
