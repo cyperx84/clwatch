@@ -1,0 +1,105 @@
+#compdef clwatch
+
+_clwatch() {
+  local -a commands
+  commands=(
+    'diff:Show version changes since last check'
+    'list:List all tracked tools and their current versions'
+    'refresh:Force-refresh a specific tool from the source'
+    'init:Initialize a clwatch workspace in the current directory'
+    'ack:Acknowledge a version (mark as seen)'
+    'watch:Watch for updates and run on interval'
+    'status:Show pipeline status from changelogs.info'
+    'service:Install or manage the clwatch background service'
+    'completion:Generate shell completion scripts'
+    'version:Show version information'
+    'help:Show help'
+  )
+
+  local -a tools
+  tools=(
+    'claude-code'
+    'codex-cli'
+    'gemini-cli'
+    'opencode'
+    'openclaw'
+  )
+
+  _arguments \
+    '1: :->command' \
+    '*: :->args'
+
+  case $state in
+    command)
+      _describe 'command' commands
+      ;;
+    args)
+      case $words[2] in
+        diff)
+          _arguments \
+            '--json[Output as JSON]' \
+            '--verbose[Show all tools including up-to-date ones]' \
+            '--no-update[Do not update local state after check]'
+          ;;
+        list)
+          _arguments \
+            '--json[Output as JSON]'
+          ;;
+        refresh)
+          _arguments \
+            '1: :->tool' \
+            '--json[Output as JSON]' \
+            '--diff-only[Only show diff, not full payload]' \
+            '--all[Refresh all tools]'
+          case $state in
+            tool) _describe 'tool' tools ;;
+          esac
+          ;;
+        ack)
+          _arguments \
+            '1: :->tool' \
+            '2: :->version'
+          case $state in
+            tool) _describe 'tool' tools ;;
+            version) _message 'version (e.g. 2.1.74)' ;;
+          esac
+          ;;
+        init)
+          _arguments \
+            '--dir[Directory to initialize]:directory:_directories' \
+            '--tools[Comma-separated tool list]:tools' \
+            '--force[Overwrite existing config]'
+          ;;
+        watch)
+          _arguments \
+            '--interval[Check interval (e.g. 6h, 30m)]:interval' \
+            '--json[Output as JSON]' \
+            '--webhook[Webhook URL to POST updates to]:url'
+          ;;
+        status)
+          _arguments \
+            '--json[Output as JSON]'
+          ;;
+        service)
+          local -a service_commands
+          service_commands=(
+            'install:Install as a background service'
+            'uninstall:Remove the background service'
+            'start:Start the service'
+            'stop:Stop the service'
+            'status:Show service status'
+            'logs:Show service logs'
+          )
+          _describe 'service command' service_commands
+          ;;
+        completion)
+          local -a shells
+          shells=('bash' 'zsh' 'fish')
+          _describe 'shell' shells
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_clwatch

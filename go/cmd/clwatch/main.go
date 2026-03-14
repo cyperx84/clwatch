@@ -47,6 +47,10 @@ func main() {
 	case "version":
 		fmt.Printf("clwatch %s\n", version)
 		os.Exit(0)
+	case "service":
+		os.Exit(runService(os.Args[2:]))
+	case "completion":
+		os.Exit(runCompletion(os.Args[2:]))
 	case "help", "--help", "-h":
 		printUsage()
 		os.Exit(0)
@@ -204,13 +208,15 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, `clwatch — track coding tool updates
 
 Usage:
-  clwatch diff      [--json] [--verbose] [--no-update]
-  clwatch list      [--json]
-  clwatch refresh   <tool> [--json] [--diff-only] [--all]
-  clwatch init      [--dir DIR] [--tools TOOLS] [--force]
-  clwatch ack       <tool> <version>
-  clwatch watch     [--interval 6h] [--json] [--webhook URL]
-  clwatch status    [--json]
+  clwatch diff        [--json] [--verbose] [--no-update]
+  clwatch list        [--json]
+  clwatch refresh     <tool> [--json] [--diff-only] [--all]
+  clwatch init        [--dir DIR] [--tools TOOLS] [--force]
+  clwatch ack         <tool> <version>
+  clwatch watch       [--interval 6h] [--json] [--webhook URL]
+  clwatch status      [--json]
+  clwatch service     <install|uninstall|start|stop|status|logs>
+  clwatch completion  <bash|zsh|fish>
   clwatch version
 
 Environment:
@@ -443,5 +449,24 @@ func runAck(args []string) int {
 	}
 
 	fmt.Printf("✓ Acknowledged %s %s\n", toolID, ver)
+	return 0
+}
+
+func runCompletion(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Usage: clwatch completion <bash|zsh|fish>\n")
+		return 1
+	}
+	switch args[0] {
+	case "bash":
+		fmt.Print(bashCompletion)
+	case "zsh":
+		fmt.Print(zshCompletion)
+	case "fish":
+		fmt.Print(fishCompletion)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown shell: %s (supported: bash, zsh, fish)\n", args[0])
+		return 1
+	}
 	return 0
 }
