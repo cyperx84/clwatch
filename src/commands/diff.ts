@@ -1,6 +1,7 @@
 import { parseISO, subDays } from 'date-fns';
 import { loadAllReleases } from '../lib/data.js';
 import { c, title } from '../lib/format.js';
+import { getLatticeSection } from './think.js';
 
 function sinceToDays(s: string) {
   const m = s.match(/^(\d+)([dwm])$/i);
@@ -16,6 +17,7 @@ export function runDiff(harness?: string, since = '7d') {
   const entries = Object.entries(all).filter(([id]) => !harness || id === harness);
 
   title(`changes in last ${since}${harness ? ` for ${harness}` : ''}`);
+  const summaryParts: string[] = [];
   for (const [id, file] of entries) {
     const recent = file.releases.filter((r) => parseISO(r.date) >= cutoff).slice(0, 3);
     if (!recent.length) continue;
@@ -24,6 +26,15 @@ export function runDiff(harness?: string, since = '7d') {
       console.log(`  ${c.ok('+')} ${r.version} ${c.dim(`(${r.date})`)}`);
       const first = r.body?.split('\n').find((l) => l.trim().length > 0)?.trim() ?? r.name;
       console.log(`    ${first.slice(0, 120)}`);
+      summaryParts.push(`${id} ${r.version}: ${first.slice(0, 80)}`);
+    }
+  }
+
+  // Append mental models section if lattice is available
+  if (summaryParts.length > 0) {
+    const section = getLatticeSection(summaryParts.join('; '));
+    if (section) {
+      console.log(section);
     }
   }
 }

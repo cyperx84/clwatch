@@ -5,6 +5,7 @@ import { runModels } from './commands/models.js';
 import { runCompat } from './commands/compat.js';
 import { runDeprecations } from './commands/deprecations.js';
 import { runTui } from './commands/tui.js';
+import { runThink } from './commands/think.js';
 
 const program = new Command();
 program.name('clwatch').description('Track harness changelog updates and config impact').version('0.1.0');
@@ -15,5 +16,6 @@ program.command('models').option('--new', 'last 90 days').option('--provider <na
 program.command('compat').argument('<modelId>').action((m) => runCompat(m));
 program.command('deprecations').option('--harness <name>').action((o) => runDeprecations(o.harness));
 program.command('tui').action(() => runTui());
+program.command('think').argument('<harness>').description('Tag recent changelog with mental models').action((h) => runThink(h));
 
 program.parse();
